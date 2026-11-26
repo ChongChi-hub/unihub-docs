@@ -9,10 +9,10 @@ Toàn bộ hệ thống sử dụng **1 instance PostgreSQL 16 (`pgvector/pgvect
 | Database | Service sở hữu | Trạng thái | Mục đích |
 |---|---|---|---|
 | `identity_db` | `identity-service` | **Đã triển khai (Sprint 1)** | Tài khoản, vai trò, phiên đăng nhập, reset mật khẩu, audit log |
-| `academic_db` | `academic-service` | **Đã triển khai (S1) + Mở rộng (S2)** | Danh mục học thuật (S1) + Lớp học phần & Đăng ký học phần (S2) |
-| `learning_db` | `learning-service` | *Thiết kế cho Sprint 2–3* | Chương/bài học, tài liệu, tiến độ, bài tập, nộp bài, hỏi đáp |
-| `assessment_db` | `assessment-service` | *Thiết kế cho Sprint 3* | Ngân hàng câu hỏi, quiz, điểm thành phần, bảng điểm, điểm danh |
-| `notification_db` | `notification-service` | *Thiết kế cho Sprint 3* | Thông báo in-app, thông báo lớp, idempotency sự kiện |
+| `academic_db` | `academic-service` | **Đã triển khai (S1 + S2)** | Danh mục học thuật (S1) + Lớp học phần & Đăng ký học phần (S2) |
+| `learning_db` | `learning-service` | **Đã triển khai (S2 + S3)** | Chương/bài học, tài liệu, tiến độ, bài tập, nộp bài (S2); hỏi đáp bài giảng (S3) |
+| `assessment_db` | `assessment-service` | **Đã triển khai (S3)** | Ngân hàng câu hỏi, quiz, điểm thành phần, bảng điểm, điểm danh |
+| `notification_db` | `notification-service` | **Đã triển khai (S3)** | Thông báo in-app, thông báo lớp, idempotency sự kiện |
 | `report_db` | `report-service` | *Thiết kế cho Sprint 4* | Read-model tổng hợp dashboard và cảnh báo học vụ |
 | `ai_db` | `ai-service` | *Thiết kế cho Sprint 4* | Vector embedding tài liệu (`pgvector` + Gemini API) và lịch sử chat RAG |
 
@@ -40,7 +40,7 @@ Toàn bộ hệ thống sử dụng **1 instance PostgreSQL 16 (`pgvector/pgvect
 - **`subjects`**: `id` (UUID PK), `faculty_id` (FK → `faculties.id`), `code` (UK), `name`, `credits` (INT), `description` (TEXT), `created_at`.
 - **`subject_prerequisites`**: `subject_id` (FK → `subjects.id`), `prerequisite_subject_id` (FK → `subjects.id`), PK `(subject_id, prerequisite_subject_id)`.
 
-### Phần mở rộng dự kiến (Sprint 2 — `CRS-*`)
+### Phần đã triển khai (Sprint 2 — `CRS-*`)
 - **`course_sections`**: `id` (UUID PK), `semester_id` (FK → `semesters.id`), `subject_id` (FK → `subjects.id`), `code` (UK), `max_capacity` (INT), `enrolled_count` (INT), `room`, `status` (`OPEN` | `CLOSED`), `version` (BIGINT optimistic lock), `created_at`.
 - **`course_section_schedules`**: `id` (UUID PK), `course_section_id` (FK → `course_sections.id`), `day_of_week` (SMALLINT 2–8), `start_period` (SMALLINT), `end_period` (SMALLINT), `room`.
 - **`course_section_lecturers`**: `course_section_id` (FK → `course_sections.id`), `lecturer_id` (UUID ref `identity_db.users`), PK `(course_section_id, lecturer_id)`.
@@ -48,7 +48,7 @@ Toàn bộ hệ thống sử dụng **1 instance PostgreSQL 16 (`pgvector/pgvect
 
 ---
 
-## 3. `learning_db` (`learning-service`) — *Dự kiến Sprint 2–3*
+## 3. `learning_db` (`learning-service`) — *Đã triển khai (Sprint 2–3)*
 
 - **`chapters`**: `id` (UUID PK), `course_section_id` (UUID ref `academic_db`), `title`, `sort_order` (INT), `published` (BOOLEAN), `created_at`.
 - **`lessons`**: `id` (UUID PK), `chapter_id` (FK → `chapters.id`), `title`, `content` (TEXT), `video_url`, `video_file_id` (ref `file-service`), `sort_order` (INT), `published` (BOOLEAN), `created_at`.
@@ -60,7 +60,7 @@ Toàn bộ hệ thống sử dụng **1 instance PostgreSQL 16 (`pgvector/pgvect
 
 ---
 
-## 4. `assessment_db` (`assessment-service`) — *Dự kiến Sprint 3*
+## 4. `assessment_db` (`assessment-service`) — *Đã triển khai (Sprint 3)*
 
 - **`questions`**: `id` (UUID PK), `subject_id` (UUID ref `academic_db`), `created_by` (UUID), `type` (`SINGLE_CHOICE` | `MULTIPLE_CHOICE`), `content` (TEXT), `options_json` (JSONB), `correct_answers_json` (JSONB), `difficulty` (`EASY` | `MEDIUM` | `HARD`), `topic`, `tags` (TEXT[]), `created_at`.
 - **`quizzes`**: `id` (UUID PK), `course_section_id` (UUID), `title`, `duration_minutes` (INT), `max_attempts` (INT), `shuffle_questions` (BOOLEAN), `show_correct_answers` (BOOLEAN), `open_at`, `close_at`, `published` (BOOLEAN), `created_at`.
@@ -74,7 +74,7 @@ Toàn bộ hệ thống sử dụng **1 instance PostgreSQL 16 (`pgvector/pgvect
 
 ---
 
-## 5. `notification_db` (`notification-service`) — *Dự kiến Sprint 3*
+## 5. `notification_db` (`notification-service`) — *Đã triển khai (Sprint 3)*
 
 - **`notifications`**: `id` (UUID PK), `recipient_id` (UUID), `type`, `title`, `body` (TEXT), `reference_type`, `reference_id`, `is_read` (BOOLEAN), `created_at`.
 - **`class_announcements`**: `id` (UUID PK), `course_section_id` (UUID), `author_id` (UUID), `title`, `content` (TEXT), `pinned` (BOOLEAN), `created_at`, `updated_at`.
